@@ -1,0 +1,304 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiGestioneRuoli.Models.Home>
+
+<div class="row">
+    <div class="col-sm-12">
+        <div id="success-container" class="alert alert-success fade in" style="display: none">
+            <button aria-hidden="true" data-dismiss="alert" class="close" type="button">×</button>
+            <span id="success-text"></span>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <div id="error-container" class="alert alert-danger fade in" style="display: none">
+            <button aria-hidden="true" data-dismiss="alert" class="close" type="button">×</button>
+            <span id="error-text"></span>
+        </div>
+    </div>
+</div>
+<br />
+<div class="row">
+    <div class="col-sm-12 text-right">
+        <button type="button" onclick="saveData()" class="btn btn-success" style=" margin-top: 10px;">Salva i cambiamenti</button>
+    </div>
+</div>
+<br />
+<div class="row">
+    <div class="col-sm-12">
+        <table id="tbl-ruoli" class="simple-table display cell-border size10e5" cellspacing="0" width="100%">
+            <thead>
+                <tr style="text-align:left">
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Utente</th>
+                    <th>Dizionario</th>
+                    <th>Ruolo</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th class="show-filter">nome</th>
+                    <th class="show-filter">cognome</th>
+                    <th class="show-filter">username</th>
+                    <th class="show-filter">dizionario</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+<br />
+<div class="row">
+    <div class="col-sm-12 text-right">
+        <button type="button" onclick="saveData()" class="btn btn-success" style=" margin-top: 10px;">Salva i cambiamenti</button>
+    </div>
+</div>
+
+<script type="text/javascript">
+    let main_table;
+    const table_id = "#tbl-ruoli";
+    const ModuleId = @Dnn.ModuleContext.ModuleId;
+    const TabId = @Dnn.ModuleContext.TabId;
+
+    $(document).ready(function () {
+        getDatatable();
+    });
+
+    function getDatatable() {
+        let columns = [];
+
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneRuoli/Home/loadDizionari")',
+            method: "Post",
+            type: "POST",
+            datatype: "json",
+            headers: {
+                "ModuleId": ModuleId,
+                "TabId": TabId,
+                "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+
+            success: function (data) {
+                const model = data;
+
+                // Aggiungo la colonna utenti come prima colonna
+                columns.push({
+                    data: "Username",
+                    title: "Username"
+                });
+
+                //setto la colonna variabile dei dizionari
+                for (let key in model) {
+                    if (model.hasOwnProperty(key)) {
+                        let item = model[key];
+                        columns.push({
+                            data: "Dizionario",
+                            title: item.Dizionario
+                        });
+                    }
+                }
+
+                //Ricerca
+                $(table_id + ' tfoot th').each(function () {
+                    var title = $(this).text();
+                    if ($(this).hasClass("show-filter")) {
+                        $(this).html('<input type="text" placeholder="Ricerca per ' + title + '" />');
+                    }
+                });
+
+                //Costruisco la tabella con datatable solo in caso di success
+                main_table = $(table_id).DataTable({
+                    dom: "RPflrtip",
+                    pageLength: 10,
+                    initComplete: function () {
+                        // Apply the search
+                        this.api().columns().every(function () {
+                            var that = this;
+
+                            $('input', this.footer()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that
+                                        .search(this.value)
+                                        .draw();
+                                }
+                            });
+                        });
+
+                        // Aggiungo la ricerca nel thead
+                        // https://datatables.net/examples/api/multi_filter.html
+                        // galliva version
+                        var r = $(table_id + ' tfoot tr');
+                        r.find('th').each(function(){
+                            $(this).css('padding', 8);
+                        });
+                        $(table_id + ' thead').append(r);
+                        $('#search_0').css('text-align', 'center');
+                    },
+
+                    ajax: {
+                        url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneRuoli/Home/loadRuoli")',
+                        method: "Post",
+                        type: "POST",
+                        datatype: "json",
+                        headers: {
+                            "ModuleId": ModuleId,
+                            "TabId": TabId,
+                            "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+                        },
+                        "dataSrc": ""
+                    },
+                    columns: [
+                        {
+                            data: 'Nome',
+                            label: "Nome",
+                            type: "text",
+                            autoWidth: true
+                        },
+                        {
+                            data: 'Cognome',
+                            label: "Cognome",
+                            type: "text",
+                            autoWidth: true,
+                        },
+                        {
+                            data: 'Username',
+                            label: "Username",
+                            type: "text",
+                            autoWidth: true
+                        },
+                        {
+                            data: 'Dizionario',
+                            label: "Dizionario",
+                            type: "text",
+                            autoWidth: true,
+                        },
+                        {
+                            data: 'SuperUser',
+                            label: "ruolo",
+                            type: "boolean",
+                            autoWidth: true,
+                            render: function (data, type, full, meta) {
+                                if (type === 'display') {
+                                    const checked = "checked='checked'";
+                                    let checked_user = null;
+                                    let checked_superuser = null;
+                                    let checked_removerole = null;
+
+                                    if (data !== null) {
+                                        if (data === true) {
+                                            checked_user = "";
+                                            checked_superuser = checked;
+                                            checked_removerole = "";
+                                        }
+                                        else {
+                                            checked_user = checked;
+                                            checked_superuser = "";
+                                            checked_removerole = "";
+                                        }
+                                    }
+                                    else {
+                                        checked_user = "";
+                                        checked_superuser = "";
+                                        checked_removerole = checked;
+                                    }
+
+                                    const id_radio = full.Username + '-' + full.Dizionario;
+                                    const radio_user = '<input type="radio" id="u-' + id_radio + '" name="' + id_radio + '" value="User" ' + checked_user + ' class="radio-user-role"> <label for="u-' + id_radio + '">User</label>';
+                                    const radio_superuser = '<input type="radio" id="su-' + id_radio + '" name="' + id_radio + '" value="SuperUser" ' + checked_superuser + ' class="radio-user-role"> <label for="su-' + id_radio + '">SuperUser</label>';
+                                    const radio_removerole = '<input type="radio" id="rr-' + id_radio + '" name="' + id_radio + '" value="RemoveRole" ' + checked_removerole + ' class="radio-user-role"> <label for="rr-' + id_radio + '">Nessun ruolo</label>';
+                                    const separator = "<span class='margin-left-5 margin-right-5 font-size-20'>|</span>";
+
+                                    data = radio_user + separator + radio_superuser + separator + radio_removerole;
+                                }
+
+                                return data;
+                            }
+
+                        }
+                    ],
+                }); //datatable
+            },//success
+            error: function (error) {
+                dtSetError(table_id);
+            }
+        });//ajax
+    }// getDatatable
+
+    function saveData() {
+        $("#wait").show();
+
+        let arr_data = [];
+        main_table.rows().every(function (rowIdx, tableLoop, rowLoop) {
+            const data = this.data();
+            // Uso main_table. per recuperare gli input radio su tutte le pagine
+            let ruolo = main_table.$("input[name='" + data.Username + "-" + data.Dizionario + "' ]:checked").val();
+            if (ruolo == "SuperUser") {
+                data.SuperUser = true;
+            }
+            else if (ruolo == "User") {
+                data.SuperUser = false;
+            }
+            else {
+                data.SuperUser = null;
+            }
+
+            arr_data.push(data);
+        });
+
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneRuoli/Home/saveData")',
+            type: "POST",
+            data: { data: JSON.stringify(arr_data) }, //dati da passare al controller
+            headers: {
+                "ModuleId": ModuleId,
+                "TabId": TabId,
+                "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                if (data.status) {
+                    showSuccessMessage(data.msg)
+                    reload_table();
+                }
+                else {
+                    showErrorMessage(data.msg);
+                }
+            },
+            error: function (error) {
+                dtSetError(table_id);
+            },
+            complete: function () {
+                $("#wait").hide();
+            }
+        }); //ajax
+    }
+
+    function reload_table() {
+        main_table.ajax.reload();
+    }
+
+    function fnBuildInputParamsTblDizionario() { }
+
+    function fnOnSuccessTblDizionario(json) {
+        try {
+            return json.data;
+        }
+        catch (e) {
+            dtSetError('#tbl-ruoli');
+        }
+    }
+
+    function showSuccessMessage(msg) {
+        $("#success-text").empty().append(msg);
+        $("#success-container").show();
+    }
+
+    function showErrorMessage(msg) {
+        $("#error-text").empty().append(msg);
+        $("#error-container").show();
+    }
+
+    function hideErrorMessage() {
+        $("#error-text").empty();
+        $("#error-container").hide();
+    }
+</script>

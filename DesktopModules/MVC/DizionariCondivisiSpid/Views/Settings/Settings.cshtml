@@ -1,0 +1,20 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage <it.invisiblefarm.dizionaricondivisi.DizionariCondivisiSpid.Models.Settings>
+
+@using DotNetNuke.Web.Mvc.Helpers
+
+<h2 id="dnnSitePanel-BasicSettings" class="dnnFormSectionHead"><a href="" class="dnnSectionExpanded">@Dnn.LocalizeString("BasicSettings")</a></h2>
+<fieldset>
+    <div class="dnnFormItem">
+        <div class="dnnLabel" style="position: relative;">
+            @Html.LabelFor(m => Model.Url, new { @class = "col-md-2 control-label" })
+        </div>
+        @Html.TextBoxFor(m => Model.Url)
+    </div>
+    <div class="dnnFormItem">
+        <div class="dnnLabel" style="position: relative;">
+            @Html.LabelFor(m => Model.Servizio, new { @class = "col-md-2 control-label" })
+        </div>
+        @Html.TextBoxFor(m => Model.Servizio)
+    </div>
+</fieldset>
+

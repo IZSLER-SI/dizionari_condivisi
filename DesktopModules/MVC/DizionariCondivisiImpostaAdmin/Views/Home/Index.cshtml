@@ -1,0 +1,204 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiImpostaAdmin.Models.Home>
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Elenco utenti</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <table id="tbl-utenti" class="simple-table display cell-border" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Email</th>
+                    <th>Data iscrizione</th>
+                    <th>Autorizzato</th>
+                    <th>Admin</th>
+                    <th></th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+    const tblId = "#tbl-utenti";
+
+    function reload_table() {
+        main_table.ajax.reload();
+    }
+
+    function fnBuildInputParamsTblUtenti() { }
+
+    function fnOnSuccessTblUtenti(json) {
+        try {
+            return json;
+        }
+        catch (e) {
+            dtSetError(tblId);
+        }
+    }
+
+    $(document).ready(function () {
+        main_table = $(tblId).DataTable({
+            dom: "Sfrtip",
+            ajax: dtBuildAjax(tblId, '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiImpostaAdmin/Home/LoadData")',
+                @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId,
+                fnBuildInputParamsTblUtenti, fnOnSuccessTblUtenti
+            ),
+            columns: [
+                {
+                    data: "Nome",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Cognome",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Email",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "DataCreazione",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "IsAutorizzato",
+                    className: 'dt-body-center',
+                    render: function (a, b, data, d) {
+                        let icon = "remove";
+                        if (data.IsAutorizzato) {
+                            icon = "check";
+                        }
+
+                        return "<em class='fa fa-" + icon + " fa-2x'></em>";
+                    }
+                },
+                {
+                    data: "IsAdmin",
+                    className: 'dt-body-center',
+                    render: function (a, b, data, d) {
+                        let icon = "remove";
+                        if (data.IsAdmin) {
+                            icon = "check";
+                        }
+
+                        return "<em class='fa fa-" + icon + " fa-2x'></em>";
+                    }
+                },
+                {
+                    data: "UserId",
+                    type: "int",
+                    className: 'dt-body-center',
+                    autoWidth: true,
+                    render: function (a, b, data, d) {
+                        if (data.IsAutorizzato) {
+                            const username = `${data.Nome} ${data.Cognome}`;
+                            if (!data.IsAdmin) {
+                                return `<button type="button" class="btn btn-success" onclick="grant2Admin('${data.UserId} ', '${username}')">Nomina admin <i class="fa fa-key"></i></button>`;
+                            }
+                            else {
+                                return `<button type="button" class="btn btn-danger" onclick="revoke2Admin('${data.UserId} ', '${username}')">Rimuovi admin <i class="fa fa-trash"></i></button>`;
+                            }
+                        }
+                    }
+                }
+            ],
+        });
+    });
+
+    function fnBuildInputParams(uid) {
+        let parameters = {
+            userId: uid
+        };
+
+        return parameters;
+    };
+
+    function grant2Admin(userId, username) {
+        if (userId <= 0) {
+            return false;
+        }
+
+        alertify.confirm(
+            "Attenzione",
+            `Confermi di voler nominare <i>admin</i> l'utente <b>${username}</b>?`,
+            function () {
+                $("#wait").show();
+                $.ajax({
+                    url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiImpostaAdmin/Home/Grant2Admin")',
+                    method: "Post",
+                    type: "POST",
+                    datatype: "json",
+                    data: fnBuildInputParams(userId),
+		            headers: {
+			            "ModuleId": @Dnn.ModuleContext.ModuleId,
+			            "TabId": @Dnn.ModuleContext.TabId,
+			            "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+                    },
+                    success: function (data) {
+                        if (data) {
+                            alertify.success("Operazione conclusa con successo");
+
+                            reload_table();
+                        }
+                    },
+                    error: function (error) {
+                        alertify.error("Si è verificato un errore");
+                    },
+                    complete: function() {
+                        $("#wait").hide();
+                    }
+                });
+            },
+            function () { }
+        );
+    }
+
+    function revoke2Admin(userId, username) {
+        if (userId <= 0) {
+            return false;
+        }
+
+        alertify.confirm(
+            "Attenzione",
+            `Confermi di voler revocare <i>admin</i> l'utente <b>${username}</b>?`,
+            function () {
+                $("#wait").show();
+                $.ajax({
+                    url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiImpostaAdmin/Home/Revoke2Admin")',
+                    method: "Post",
+                    type: "POST",
+                    datatype: "json",
+                    data: fnBuildInputParams(userId),
+		            headers: {
+			            "ModuleId": @Dnn.ModuleContext.ModuleId,
+			            "TabId": @Dnn.ModuleContext.TabId,
+			            "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+                    },
+                    success: function (data) {
+                        if (data) {
+                            alertify.success("Operazione conclusa con successo");
+
+                            reload_table();
+                        }
+                    },
+                    error: function (error) {
+                        alertify.error("Si è verificato un errore");
+                    },
+                    complete: function() {
+                        $("#wait").hide();
+                    }
+                });
+            },
+            function () { }
+        );
+    }
+</script>

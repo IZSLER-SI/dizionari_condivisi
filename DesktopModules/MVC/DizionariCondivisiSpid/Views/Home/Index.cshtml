@@ -1,0 +1,39 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiSpid.Models.Item>
+
+<div class="row">
+    <div class="col-sm-12">
+        <div id="container-spid-button">
+            <a href="#" class="italia-it-button italia-it-button-size-m button-spid" spid-idp-button="#spid-idp-button-medium-get"
+                aria-haspopup="true" aria-expanded="false" aria-label="Entra con SPID" onclick="doSpidLogin()">
+                <span class="italia-it-button-icon">
+                    <img src='@Url.Content("~/DesktopModules/MVC/DizionariCondivisiSpid/Images/spid-ico-circle-bb.svg")'
+                            onerror="this.src = '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiSpid/Images/spid-ico-circle-bb.svg")'; this.onerror = null;"
+                            alt="spid-ico-circle-bb">
+                </span>
+                <span class="italia-it-button-text">Entra con SPID</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function doSpidLogin() {
+        const newForm = jQuery('<form>', {
+            'action': '@Model.Url',
+            'target': '_Self',
+            'method': 'post'
+        }).append(
+            jQuery(
+                '<input>',
+                {
+                    'name': 'service',
+                    'value': '@Model.Servizio',
+                    'type': 'hidden'
+                }
+            )
+        );
+
+        $(document.body).append(newForm);
+        newForm.submit();
+    }
+</script>

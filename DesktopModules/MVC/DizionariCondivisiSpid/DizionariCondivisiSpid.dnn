@@ -1,0 +1,96 @@
+<dotnetnuke type="Package" version="5.0">
+	<packages>
+		<package name="DizionariCondivisiSpid" type="Module" version="01.00.00">
+			<friendlyName>DizionariCondivisiSpid</friendlyName>
+			<description>DizionariCondivisiSpid</description>
+			<iconFile>~/Icons/Sigma/Software_32X32_Standard.png</iconFile>
+			<owner>
+				<name>Invisiblefarm S.R.L.</name>
+				<organization>Invisiblefarm S.R.L.</organization>
+				<url>https://www.invisiblefarm.it/</url>
+				<email>info@invisiblefarm.it</email>
+			</owner>
+			<license />
+			<releaseNotes />
+			<dependencies>
+				<dependency type="CoreVersion">09.08.00</dependency>
+			</dependencies>
+			<components>
+				<component type="Script">
+					<scripts>
+						<basePath>DesktopModules\MVC\DizionariCondivisiSpid</basePath>
+						<script type="Install">
+							<path>Providers\DataProviders\SqlDataProvider</path>
+							<name>00.00.01.SqlDataProvider</name>
+							<version>00.00.01</version>
+						</script>
+						<script type="UnInstall">
+							<path>Providers\DataProviders\SqlDataProvider</path>
+							<name>Uninstall.SqlDataProvider</name>
+							<version>00.00.01</version>
+						</script>
+					</scripts>
+				</component>
+				<component type="ResourceFile">
+					<resourceFiles>
+						<basePath>DesktopModules/MVC/DizionariCondivisiSpid</basePath>
+						<resourceFile>
+							<name>Resources.zip</name>
+						</resourceFile>
+					</resourceFiles>
+				</component>
+				<component type="Module">
+					<desktopModule>
+						<moduleName>DizionariCondivisiSpid</moduleName>
+						<foldername>DizionariCondivisiSpid</foldername>
+						<supportedFeatures />
+						<moduleDefinitions>
+							<moduleDefinition>
+								<friendlyName>DizionariCondivisiSpid</friendlyName>
+								<defaultCacheTime>0</defaultCacheTime>
+								<moduleControls>
+									<moduleControl>
+										<controlKey />
+										<controlSrc>it.invisiblefarm.dizionaricondivisi.DizionariCondivisiSpid.Controllers/Home/Index.mvc</controlSrc>
+										<supportsPartialRendering>False</supportsPartialRendering>
+										<controlTitle />
+										<controlType>View</controlType>
+										<iconFile />
+										<helpUrl />
+										<viewOrder>0</viewOrder>
+									</moduleControl>
+									<moduleControl>
+										<controlKey>Settings</controlKey>
+										<controlSrc>it.invisiblefarm.dizionaricondivisi.DizionariCondivisiSpid.Controllers/Settings/Settings.mvc</controlSrc>
+										<supportsPartialRendering>False</supportsPartialRendering>
+										<controlTitle>DizionariCondivisiSpid Settings</controlTitle>
+										<controlType>Edit</controlType>
+										<iconFile />
+										<helpUrl />
+										<viewOrder>0</viewOrder>
+									</moduleControl>
+								</moduleControls>
+							</moduleDefinition>
+						</moduleDefinitions>
+					</desktopModule>
+				</component>
+				<component type="Assembly">
+					<assemblies>
+						<assembly>
+							<name>DizionariCondivisiSpid.dll</name>
+							<path>bin</path>
+						</assembly>
+						<assembly>
+							<name>DizionariCondivisiUtils.dll</name>
+							<path>bin</path>
+						</assembly>
+						<assembly>
+							<name>DizionariCondivisiLogging.dll</name>
+							<path>bin</path>
+						</assembly>
+					</assemblies>
+				</component>
+			</components>
+		</package>
+	</packages>
+</dotnetnuke>

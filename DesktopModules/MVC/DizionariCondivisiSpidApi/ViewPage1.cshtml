@@ -1,0 +1,37 @@
+﻿@{
+    var errorCode = Request["custom"];
+    HtmlString errorMsg = new HtmlString("");
+    string cssClass = "dnnFormMessage";
+
+    switch (errorCode)
+    {
+        case "nousr":
+            errorMsg = new HtmlString("<b>Nessun</b> utente trovato");
+            cssClass += " dnnFormValidationSummary";
+            break;
+        case "dblusr":
+            errorMsg = new HtmlString("Sono stati individuati <b>due o più utenti con lo stesso codice fiscale</b>. Impossibile procedere");
+            cssClass += " dnnFormWarning";
+            break;
+        case "unathusr":
+            errorMsg = new HtmlString("Non sei autorizzato a connetterti a questo sito");
+            cssClass += " dnnFormValidationSummary";
+            break;
+        case "crt":
+            errorMsg = new HtmlString("È stata inviata una e-mail con i tuoi dati all'Amministratore del Sito per la verifica. </br> Riceverai una notifica via mail quando sarà stata approvata la registrazione.");
+            cssClass += " dnnFormSuccess";
+            break;
+        case "exsaaad":
+            errorMsg = new HtmlString("<b>I dipendenti ed i collaborati IZSLER</b> devono effettuare il primo accesso utilizzando la funzionalità \"Accedi con utente di Dominio IZSLER\". </br>Successivamente potranno accedere anche mediante SPID.");
+            cssClass += " dnnFormValidationSummary";
+            break;
+        default:
+            errorMsg = new HtmlString("Si sta cercando di <b>accedere in modo NON previsto</b>");
+            cssClass += " dnnFormValidationSummary ";
+            break;
+    }
+}
+
+<div class="@cssClass">@errorMsg</div>
+
+<a href="/">Torna all'homepage</a>

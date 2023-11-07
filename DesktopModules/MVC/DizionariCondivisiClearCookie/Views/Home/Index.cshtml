@@ -1,0 +1,28 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiClearCookie.Models.Home>
+
+<br />
+<div id="container-noAuth" class="dnnFormMessage dnnFormError login-page" style="display: none;">Non sei autorizzato a connetterti a questo sito.</div>
+<div id="container-private-reg" class="dnnFormMessage dnnFormSuccess login-page" style="display: none;"></div>
+
+<script>
+    function isUnauth() {
+        return "@it.invisiblefarm.dizionaricondivisi.DizionariCondivisiClearCookie.Models.Home.IsUnauth()" == "True";
+    }
+
+    $(function () {
+        const dnnFormSuccessMessageContainer = $("#dnn_ctr415_ctl01_dnnSkinMessage");
+
+        if (dnnFormSuccessMessageContainer.length > 0) {
+            const messageText = dnnFormSuccessMessageContainer.children("span#dnn_ctr415_ctl01_lblMessage").html();
+            dnnFormSuccessMessageContainer.hide();
+
+            const containerPrivateRegistrazione = $("#container-private-reg");
+            containerPrivateRegistrazione.html(messageText);
+            containerPrivateRegistrazione.show();
+        }
+        else if (isUnauth()) {
+            const dnnFormNoAuth = $("#container-noAuth");
+            dnnFormNoAuth.show();
+        }
+    });
+</script>

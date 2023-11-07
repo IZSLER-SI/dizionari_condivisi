@@ -1,0 +1,176 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<IEnumerable<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiCaricamentoDizionario.Models.DizionarioModel>>
+
+<div class="alert alert-warning">
+    Verificare la struttura della tabella prima di procedere al caricamento dati. <br />
+    I campi <b>id</b>, <b>chiave</b>, <b>chiave_composta</b>, <b>last_update</b> sono valorizzati dinamicamente dal sistema. <br />
+    Nel caso in cui nel file CSV da caricare compaia il carattere <i>punto e virgola ;</i> racchiudere il campo tra <i>virgolette "[...];[...]"</i> <br />
+    Separatore: punto e virgola ; <br />
+    Formato data: yyyy-MM-dd oppure yyyy-MM-dd HH:mm:ss
+</div>
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Scarica struttura</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-10">
+        <select id="dropdown" name="dropdown" class="form-control">
+            <option value="0">Seleziona dizionario</option>
+        </select>
+    </div>
+    <div class="col-sm-2">
+        <button type="button" id="download_struttura" class="btn btn-success" onclick="downloadStruttura()">Scarica struttura</button>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Carica i dati</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-6">
+        <select id="dropdown-upload" class="form-control">
+            <option value="0">Dizionario di destizione</option>
+        </select>
+    </div>
+    <div class="col-sm-4">
+        <input type="file" id="FileUpload1" class="form-control" />
+    </div>
+    <div class="col-sm-2">
+        <button type="button" id="btnUpload" class="btn btn-success" onclick="uploadData()">Popola dizionario</button>
+    </div>
+</div>
+
+<script type="text/javascript">
+    const ModuleId = @Dnn.ModuleContext.ModuleId;
+    const TabId = @Dnn.ModuleContext.TabId;
+
+    $(document).ready(function () {
+        getDizionari();
+    });
+
+    function getDizionari() {
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiCaricamentoDizionario/Home/GetDizionari")',
+            method: "Post",
+            type: "POST",
+            dataType: "json",
+            headers: {
+                "ModuleId": ModuleId,
+                "TabId": TabId,
+                "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                $.each(data, function () {
+                    const optValue = this.Dizionario;
+                    const optText = `${this.Dizionario} - ${this.Descrizione}`;
+                    $("#dropdown").append($("<option/>").val(optValue).text(optText));
+                    $("#dropdown-upload").append($("<option/>").val(optValue).text(optText));
+                });
+            },
+            error: function () {
+                alertify.alert("ERRORE", "Si è verificato un errore nel recupero dell'elenco dei dizionari");
+            }
+        });
+    }
+
+    function downloadStruttura() {
+        const nome_dizionario = $("#dropdown option:selected").val();
+
+        if (nome_dizionario == 0) {
+            alertify.alert("ERRORE", "Selezionare un dizionario, grazie");
+            return;
+        }
+
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiCaricamentoDizionario/Home/DownloadStruttura")',
+            method: "Post",
+            type: "POST",
+            dataType: "json",
+            data: { nome_dizionario: nome_dizionario },
+            headers: {
+                "ModuleId": ModuleId,
+                "TabId": TabId,
+                "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                downloadFile(data.structure, "text/csv", nome_dizionario + "_struttura.csv", "id-struct");
+            },
+            error: function () {
+                alert("Failed!");
+            }
+        });
+    }
+
+    function validateUploadData() {
+        return $("#dropdown-upload :selected").val() != 0;
+    }
+
+    function fnBuildInputParams(name, filedata) {
+        return {
+            nomeDizionario: name,
+            fileData: filedata
+        }
+    }
+
+    function resetForm() {
+        $("#dropdown-upload").val(0);
+        $("#FileUpload1").val("");
+    }
+
+    function uploadData() {
+        if (validateUploadData()) {
+            const nomeDizionario = $("#dropdown-upload :selected").val();
+            console.log("nomeDizionario", nomeDizionario);
+
+            // Checking whether FormData is available in browser
+            if (window.FormData !== undefined) {
+                var fileUpload = $("#FileUpload1").get(0);
+                var files = fileUpload.files;
+                
+                // Create FormData object
+                var fileData = new FormData();
+
+                const numUploadedFile = files.length;
+                for (var i = 0; i < numUploadedFile; i++) {
+                    fileData.append(files[i].name, files[i]);
+                }
+
+                $.ajax({
+                    url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiCaricamentoDizionario/Home/UploadCsv?dizionario=")' + nomeDizionario,
+                    method: "Post",
+                    type: "POST",
+                    datatype: "json",
+                    data: fileData,
+                    contentType: false, // Not to set any content header
+                    processData: false, // Not to process data
+                    headers: {
+                        "ModuleId": ModuleId,
+                        "TabId": TabId,
+                        "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+                    },
+                    success: function (result) {
+                        if (result.status) {
+                            alertify.alert("INFO", result.msg, function () { window.location = "/" });
+                        }
+                        else {
+                            alertify.alert("ERRORE", result.msg, function () { resetForm(); });
+                        }
+                    },
+                    error: function (err) {
+                        console.log(err);
+                        alertify.alert("ERRORE", err.statusText, function () { resetForm(); });
+                    }
+                });
+            } else {
+                alertify.alert("ERRORE", "FormData non è supportato.", function () { resetForm(); });
+            }
+        }
+        else {
+            alertify.alert("ERRORE", "Seleziona un dizionario in cui caricare i dati", function () { resetForm(); });
+        }
+    }
+</script>

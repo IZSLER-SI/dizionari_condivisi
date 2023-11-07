@@ -1,0 +1,923 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiAdminDizionario.Models.AdminDizionarioModel>
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>@Model.DefinePageTitle() dizionario</h2>
+    </div>
+</div>
+
+@if (Model.Step == 1 && !Model.IsCreateTable())
+{
+    <div id="info-container" class="alert alert-warning">
+        <b>NB</b>: NON è consentito aggiungere una colonna obbligatoria priva di valore di default
+    </div>
+}
+
+<div id="success-container" class="alert alert-success fade in" style="display: none">
+    <button aria-hidden="true" data-dismiss="alert" class="close" type="button">×</button>
+    <span id="success-text"></span>
+</div>
+<div id="error-container" class="alert alert-danger fade in" style="display: none">
+    <button aria-hidden="true" data-dismiss="alert" class="close" type="button">×</button>
+    <span id="error-text"></span>
+</div>
+
+@if (Model.Step == 0)
+{
+    <input type="hidden" id="step" name="step" value="0" />
+
+    if (Model.IsCreateTable())
+    {
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label for="dizionario-name">Dizionario:</label>
+                    <input type="text" class="form-control" id="dizionario-name" name="diz" />
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label for="dizionario-key">Chiave:</label>
+                    <input type="text" id="dizionario-key" name="dizkey" max="2" maxlength="2" class="form-control max-width-100" />
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="form-group">
+                    <label for="dizionario-numfield">
+                        Numero colonne
+                        <i class="fa fa-info-circle tooltips" data-toggle="tooltip" data-html="true"
+                           title="Indicare <b><u>SOLO</u></b> il numero di campi personalizzati.<br />
+                            Il sistema aggiungerà automaticamente i @Model.DefaultField campi di default">
+                        </i>:
+                    </label>
+                    <input type="number" id="dizionario-numfield" name="diznumfield" class="form-control max-width-100" />
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="form-group">
+                    <label for="dizionari-descrizione">Descrizione:</label>
+                    <input type="text" id="dizionario-descrizione" name="dizdesc" class="form-control max-width-100"
+                           placeholder="Descrizione dizionario" />
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-10">&nbsp;</div>
+            <div class="col-sm-2" style="text-align: right">
+                <button type="button" class="btn btn-primary" onclick="validateInput()">Prosegui</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <input type="hidden" id="diz" name="diz" />
+        <input type="hidden" id="diznumfield" name="diznumfield" />
+
+        <div class="row">
+            <div class="col-sm-12">
+                <table id="tbl-dizionario" class="simple-table display cell-border" cellspacing="0" width="100%">
+                    <thead>
+                        <tr style="text-align:left">
+                            <th>Dizionario</th>
+                            <th>Descrizione</th>
+                            <th>Chiave</th>
+                            <th>Numero voci</th>
+                            <th>Modifica struttura</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    }
+}
+else if (Model.Step == 1)
+{
+    <fieldset>
+        <legend>Riepilogo</legend>
+        <div class="row">
+            <div class="col-sm-3">
+                Chiave: <label>@Model.Chiave</label>
+            </div>
+            <div class="col-sm-3">
+                Dizionario: <label>@Model.Dizionario</label>
+            </div>
+            <div class="col-sm-3">
+                Descrizione: <label>@Model.Descrizione</label>
+            </div>
+            <div class="col-sm-3">
+                Numero campi: <label>@Model.TotaleField</label>
+            </div>
+        </div>
+    </fieldset>
+    <br />
+    <fieldset>
+        <legend>Campi di default (@Model.DefaultField)</legend>
+        <!-- CHIAVE -->
+        <div class="row">
+            <div class="col-sm-3">
+                Campo: <label>chiave</label> <i class="fa fa-key"></i>
+            </div>
+            <div class="col-sm-3">
+                Tipo: <label>NCHAR(7)</label>
+            </div>
+            <div class="col-sm-3">
+                Obbligatorio: <label>Sì</label>
+            </div>
+            <div class="col-sm-3">
+                Default: <label>ND</label>
+            </div>
+        </div>
+        <!-- DESCRIZIONE -->
+        <div class="row">
+            <div class="col-sm-3">
+                Campo: <label>descrizione</label>
+            </div>
+            <div class="col-sm-3">
+                Tipo: <label>NVARCHAR(255)</label>
+            </div>
+            <div class="col-sm-3">
+                Obbligatorio: <label>Sì</label>
+            </div>
+            <div class="col-sm-3">
+                Default: <label>ND</label>
+            </div>
+        </div>
+        <!-- LAST_UPDATE -->
+        <div class="row">
+            <div class="col-sm-3">
+                Campo: <label>last_update</label>
+            </div>
+            <div class="col-sm-3">
+                Tipo: <label>DATETIME</label>
+            </div>
+            <div class="col-sm-3">
+                Obbligatorio: <label>Sì</label>
+            </div>
+            <div class="col-sm-3">
+                Default: <label>ND</label>
+            </div>
+        </div>
+        <!-- VALID_FROM -->
+        <div class="row">
+            <div class="col-sm-3">
+                Campo: <label>valid_from</label>
+            </div>
+            <div class="col-sm-3">
+                Tipo: <label>DATE</label>
+            </div>
+            <div class="col-sm-3">
+                Obbligatorio: <label>Sì</label>
+            </div>
+            <div class="col-sm-3">
+                Default: <label>ND</label>
+            </div>
+        </div>
+        <!-- VALID_TO -->
+        <div class="row">
+            <div class="col-sm-3">
+                Campo: <label>valid_to</label>
+            </div>
+            <div class="col-sm-3">
+                Tipo: <label>DATE</label>
+            </div>
+            <div class="col-sm-3">
+                Obbligatorio: <label>Sì</label>
+            </div>
+            <div class="col-sm-3">
+                Default: <label>ND</label>
+            </div>
+        </div>
+        <!-- CODICE_DARWIN -->
+        <div class="row">
+            <div class="col-sm-3">
+                Campo: <label>codice_darwin</label>
+            </div>
+            <div class="col-sm-3">
+                Tipo: <label>INT</label>
+            </div>
+            <div class="col-sm-3">
+                Obbligatorio: <label>Sì</label>
+            </div>
+            <div class="col-sm-3">
+                Default: <label>ND</label>
+            </div>
+        </div>
+        <!-- CONTATORE -->
+        <div class="row">
+            <div class="col-sm-3">
+                Campo: <label>contatore</label>
+            </div>
+            <div class="col-sm-3">
+                Tipo: <label>BIGINT</label>
+            </div>
+            <div class="col-sm-3">
+                Obbligatorio: <label>No</label>
+            </div>
+            <div class="col-sm-3">
+                Default: <label>ND</label>
+            </div>
+        </div>
+    </fieldset>
+    @*if (!Model.IsCreateTable())
+    {
+        <fieldset id="modify-altri-campi">
+            <legend>Altri campi</legend>
+        </fieldset>
+        <br />
+    }*@
+    if (Model.CustomField > 0)
+    {
+        <fieldset>
+            <legend>Campi personalizzati (@Model.CustomField)</legend>
+
+            @for (int i = 0; i < Model.CustomField; i++)
+            {
+                <fieldset id="container-custom-field-@i" class="container-custom-field">
+                    <legend>Campo @i 
+                        @Html.Raw(
+                            !Model.IsCreateTable() && (i < Model.Fields.Count) 
+                                ? " - <label for='modifica-field-" + i + "'>Abilita modifica</label> <input type='checkbox' onchange='enableCorrelateField(" + i + ")' id='modifica-field-" + i + "' name='modifica-field-" + i + "' />" 
+                                : ""
+                        )
+                    </legend>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label for="custom-field-campo-@i" style="color: red">Campo (*)</label>:
+                                <input type="text" id="custom-field-campo-@i" name="custom-field-campo-@i"
+                                    class="max-width-100 custom-field-campo form-control"
+                                    value="@((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? Model.Fields[i].name : "")"
+                                    @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "")
+                                />
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label for="custom-field-tipo-@i" style="color: red">Tipo (*)</label>:
+                                <select id="custom-field-tipo-@i" class="custom-field-tipo form-control" name="custom-field-tipo-@i" onchange="showDimensionInput($(this), 'set-dimension')" 
+                                        @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "")>
+                                    @foreach (KeyValuePair<string, string> item in Model.ListDatatypeField)
+                                    {
+                                        <option value="@item.Key" @(item.Value.Equals("1") ? "class=set-dimension" : "")
+                                                @((!Model.IsCreateTable() && (i < Model.Fields.Count)) && Model.Fields[i].type.Equals(item.Key) ? "selected" : "")>
+                                            @item.Key
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-4" id="container-custom-field-tipo-dim-@i" @((!Model.IsCreateTable() && (i < Model.Fields.Count) && Model.Fields[i].HasDimension()) ? "" : "style=display:none")>
+                            <label for="custom-field-tipo-dim-@i">
+                                <span style="color: red">Dimensione (*)</span>
+                                <i class="fa fa-info-circle tooltips max-width-25" data-toggle="tooltip" data-html="true" title="Indicare la dimensione del campo"></i>
+                            </label>
+                            <input type="text" id="custom-field-tipo-dim-@i" name="custom-field-tipo-dim-@i" maxlength="3" max="3" class="custom-field-dim form-control"
+                                value="@((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? Model.Fields[i].GetDimension().ToString() : "")" 
+                                @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "")
+                            />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <div class="form-check">
+                                <label>Obbligatorio:</label>
+                                <input type="radio" id="custom-field-obbligatorio-si-@i" class="custom-field-obbligatorio form-check-input" name="custom-field-obbligatorio-@i" value="S" onchange="checkNewValue(@i)"
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count) && !Model.Fields[i].IsNullable()) ? "checked" : "")
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "")
+                                />
+                                <label for="custom-field-obbligatorio-si-@i" class="form-check-label">Sì</label>
+
+                                <input type="radio" id="custom-field-obbligatorio-no-@i" class="custom-field-obbligatorio form-check-input" name="custom-field-obbligatorio-@i" value="N"
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count) && Model.Fields[i].IsNullable()) ? "checked" : "")
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "")
+                                />
+                                <label for="custom-field-obbligatorio-no-@i" class="form-check-label">No</label>
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="form-check">
+                                <label>
+                                    Modificabile
+                                    <i class="fa fa-info-circle tooltips" data-toggle="tooltip" data-html="true"
+                                       title="Sì: consente la modifica del record, senza bisogno di eliminare e re-inserire il record">
+                                    </i>:
+                                </label>
+                                <input type="radio" id="custom-field-modificabile-si-@i" class="custom-field-modificabile form-check-input" name="custom-field-modificabile-@i" value="S"
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count) && Model.Fields[i].CanEdit()) ? "checked" : "")
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "") />
+                                <label for="custom-field-modificabile-si-@i" class="form-check-label">Sì</label>
+
+                                <input type="radio" id="custom-field-modificabile-no-@i" class="custom-field-modificabile form-check-input" name="custom-field-modificabile-@i" value="N"
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count) && !Model.Fields[i].CanEdit()) ? "checked" : "")
+                                       @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "") />
+                                <label for="custom-field-modificabile-no-@i" class="form-check-label">No</label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label for="custom-field-default-@i">Default:</label>
+                                <input type="text" id="custom-field-default-@i" name="custom-field-default-@i"
+                                    class="custom-field-default form-control"
+                                    value="@((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? Model.Fields[i].default_value : "")"
+                                    @((!Model.IsCreateTable() && (i < Model.Fields.Count)) ? "disabled" : "")
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            }
+        </fieldset>
+    }
+    <hr class="dividers_4" />
+    <div class="row">
+        <div class="col-sm-10">&nbsp;</div>
+        <div class="col-sm-2" style="text-align: right">
+            <button type="button" onclick="validateFieldInput(@Model.CustomField)" class="btn btn-success">@Model.DefineButtonStep1() tabella</button>
+        </div>
+    </div>
+}
+
+
+<script type="text/javascript">
+    function checkNewValue(i) {
+        const obbligatorio = $("input[name='custom-field-obbligatorio-" + i + "']:checked").val();
+        const newField = $("#modifica-field-" + i).prop("checked") == undefined;
+        const checkboxChecked = $("#modifica-field-" + i).prop("checked");
+        
+        if (obbligatorio === "S" && !newField && checkboxChecked) {
+            alertify.alert(
+                "ATTENZIONE",
+                "Stai modificando il Campo " + i + " da NON OBBLIGATORIO ad OBBLIGATORIO: ciò potrebbe generare errori.<br />" +
+                "Se non lo hai già fatto, assegna un valore, per il Campo " + i + ", a tutti i record e poi aggiorna l'obbligatorietà.",
+                function () { }
+            );
+        }
+    }
+
+    function enableCorrelateField(index) {
+        if ($("#modifica-field-" + index).prop("checked")) {
+            $("#custom-field-tipo-" + index).prop("disabled", false);
+            $("#custom-field-tipo-dim-" + index).prop("disabled", false);
+            $("#custom-field-obbligatorio-si-" + index).prop("disabled", false);
+            $("#custom-field-obbligatorio-no-" + index).prop("disabled", false);
+            $("#custom-field-modificabile-si-" + index).prop("disabled", false);
+            $("#custom-field-modificabile-no-" + index).prop("disabled", false);
+            $("#custom-field-default-" + index).prop("disabled", false);
+        }
+        else {
+            $("#custom-field-tipo-" + index).prop("disabled", true);
+            $("#custom-field-tipo-dim-" + index).prop("disabled", true);
+            $("#custom-field-obbligatorio-si-" + index).prop("disabled", true);
+            $("#custom-field-obbligatorio-no-" + index).prop("disabled", true);
+            $("#custom-field-modificabile-si-" + index).prop("disabled", true);
+            $("#custom-field-modificabile-no-" + index).prop("disabled", true);
+            $("#custom-field-default-" + index).prop("disabled", true);
+        }
+    }
+
+    function showSuccessMessage(msg) {
+        $("#success-text").empty().append(msg);
+        $("#success-container").show();
+    }
+
+    function showErrorMessage(msg) {
+        $("#error-text").empty().append(msg);
+        $("#error-container").show();
+    }
+
+    function hideErrorMessage() {
+        $("#error-text").empty();
+        $("#error-container").hide();
+    }
+
+    function fnBuildInputParams(name, key) {
+        let parameters = {
+            name: name,
+            key: key
+        }
+        return parameters;
+    }
+
+    function validateInput() {
+        let error = false;
+        let msg = "";
+        const name = $("#dizionario-name").val().trim();
+        const key = $("#dizionario-key").val().trim();
+        const numfield = $("#dizionario-numfield").val().trim();
+        const descrizione = $("#dizionario-descrizione").val();
+
+        if (!!name) {
+            if (!checkRegExp(name)) {
+                if (msg.trim().length > 0) {
+                    msg += "<br />";
+                }
+                msg += "Campo <b>Dizionario</b> non rispetta il formalismo @it.invisiblefarm.dizionaricondivisi.DizionariCondivisiAdminDizionario.Models.DatabaseTableModel.PatternCampoJs ";
+                error = true;
+            }
+        }
+        else {
+            msg = "Campo <b>Dizionario</b> obbligatorio";
+            error = true;
+        }
+
+        if (!!key) {
+        }
+        else {
+            if (msg.trim().length > 0) {
+                msg += "<br />";
+            }
+            msg += "Campo <b>Chiave</b> obbligatorio";
+            error = true;
+        }
+
+        if (isNaN(numfield) || !!!numfield) {
+            if (msg.trim().length > 0) {
+                msg += "<br />";
+            }
+            msg += "Campo <b>Numero colonne</b> obbligatorio/non numerico";
+            error = true;
+        }
+
+        if (!!descrizione) {
+        }
+        else {
+            if (msg.trim().length > 0) {
+                msg += "<br />";
+            }
+            msg += "Campo <b>Descrizione</b> obbligatorio";
+            error = true;
+        }
+
+        if (error) {
+            showErrorMessage(msg);
+
+            return;
+        }
+        else {
+            hideErrorMessage();
+
+            $.ajax({
+                url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiAdminDizionario/Home/ValidateInput")',
+                method: "Post",
+                type: "POST",
+                datatype: "json",
+                data: fnBuildInputParams(name, key),
+		        headers: {
+			        "ModuleId": @Dnn.ModuleContext.ModuleId,
+			        "TabId": @Dnn.ModuleContext.TabId,
+			        "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+                },
+                success: function (data) {
+                    console.log("Success");
+                    console.log(data);
+
+                    if (data.name_exist) {
+                        msg = "Dizionario scelto (" + name + ") già in uso";
+                        error = true;
+                    }
+                    if (data.key_exist) {
+                        if (msg.trim().length > 0) {
+                            msg += "<br />";
+                        }
+                        msg += "Chiave scelta (" + key + ") già in uso";
+                        error = true;
+                    }
+
+                    if (error) {
+                        showErrorMessage(msg);
+
+                        return;
+                    }
+                    else {
+                        //Validate OK, submit
+                        $("#step").val(1);
+                        $("form").submit();
+                    }
+                },
+                error: function (msg) {
+                    console.log("Error");
+                    console.log(msg);
+                }
+            });
+        }
+    }
+
+    function showDimensionInput(item, param_class) {
+        let select = item[0]; //.context;
+        let selected_option_index = select.options.selectedIndex;
+        let needDimension = (select.options[selected_option_index].classList.value == param_class);
+        let id = select.id;
+        let repeater = id.substring(id.lastIndexOf("-") + 1);
+
+        if (needDimension) {
+            $("#custom-field-tipo-dim-" + repeater).val(null);
+            $("#container-custom-field-tipo-dim-" + repeater).show();
+        }
+        else {
+            $("#container-custom-field-tipo-dim-" + repeater).hide();
+            $("#custom-field-tipo-dim-" + repeater).val(null);
+        }
+
+        return needDimension;
+    }
+
+    function checkRegExp(txt) {
+        /*
+        * Controllo il formalismo della colonna/tabella
+        * Iniziare con lettere o _
+        * concludere con lettere, numeri o _
+        * */
+        const pattern = @it.invisiblefarm.dizionaricondivisi.DizionariCondivisiAdminDizionario.Models.DatabaseTableModel.PatternCampoJs;
+
+        return pattern.exec(txt);
+    }
+
+    function stringToBool(param) {
+        if (param === "True") {
+            return true;
+        }
+
+        return false;
+    }
+
+    function isStringEmpty(str) {
+        return str.length == 0;
+    }
+
+    function validateFieldInput(custom_field) {
+        hideErrorMessage();
+
+        let result = [];
+        let error = false;
+        let msg = "";
+
+        for (let i = 0; i < custom_field; i++) {
+            let newField = $("#modifica-field-" + i).prop("checked") == undefined;
+            let checkboxChecked = $("#modifica-field-" + i).prop("checked");
+            let editField = newField ? true : checkboxChecked;
+            let campo = $("#custom-field-campo-" + i).val().replace(" ", "_");
+            let selected_option = $("#custom-field-tipo-" + i + " option:checked");
+            let dimensione;
+
+            if (editField) {
+                if (!isStringEmpty(campo)) {
+                    if (!checkRegExp(campo)) {
+                        if (msg.trim().length > 0) {
+                            msg += "<br />";
+                        }
+                        msg += "Campo " + i + ": <b>campo</b> non rispetta il formalismo @it.invisiblefarm.dizionaricondivisi.DizionariCondivisiAdminDizionario.Models.DatabaseTableModel.PatternCampoJs ";
+                        error = true;
+                    }
+                }
+                else {
+                    if (msg.trim().length > 0) {
+                        msg += "<br />";
+                    }
+                    msg += "Campo " + i + ": <b>campo</b> obbligatorio ";
+                    error = true;
+                }
+
+                if (selected_option.hasClass("set-dimension")) {
+                    dimensione = $("#custom-field-tipo-dim-" + i).val();
+
+                    if (isNaN(dimensione) || isStringEmpty(dimensione)) {
+                        if (msg.trim().length > 0) {
+                            msg += "<br />";
+                        }
+                        msg += "Campo " + i + ": <b>dimensione</b> obbligatorio/non numerico";
+                        error = true;
+                    }
+                }
+
+                const obbligatorio = $("input[name='custom-field-obbligatorio-" + i + "']:checked").val();
+                const modificabile = $("input[name='custom-field-modificabile-" + i + "']:checked").val();
+                const defaultvalue = $("#custom-field-default-" + i).val()
+                if (!stringToBool("@Model.IsCreateTable()")) {
+                    if (obbligatorio === "S" && isStringEmpty(defaultvalue)) {
+                        if (msg.trim().length > 0) {
+                            msg += "<br />";
+                        }
+
+                        msg += "Campo " + i + ": NON è consentito aggiungere una colonna obbligatoria priva di valore di default";
+                        error = true;
+                    }
+                }
+
+                if (!error) {
+                    result.push({
+                        campo: campo, tipo: selected_option.val(), dimensione: dimensione,
+                        obbligatorio: obbligatorio, modificabile: modificabile,
+                        defaultvalue: defaultvalue, newField: newField
+                    });
+                }
+            }
+        }
+
+        if (error) {
+            alertify
+                .alert(
+                    "ERRORE",
+                    "Validazione dati NON superata, verificare l'elenco degli errori riscontrati",
+                    function () { }
+            );
+
+            showErrorMessage(msg);
+
+            return;
+        }
+        else {
+            console.log(result);
+
+            if (stringToBool("@Model.IsCreateTable()")) {
+                // Aggiunti in ordine inverso perché la funzione unshift inserisce in testa
+                result.unshift({
+                    campo: "contatore", tipo: "bigint", dimensione: null,
+                    obbligatorio: "N", modificabile: "N", defaultvalue: "ND"
+                });
+                result.unshift({
+                    campo: "codice_darwin", tipo: "int", dimensione: null,
+                    obbligatorio: "S", modificabile: "N", defaultvalue: "ND"
+                });
+                result.unshift({
+                    campo: "valid_to", tipo: "date", dimensione: null,
+                    obbligatorio: "S", modificabile: "N", defaultvalue: "ND"
+                });
+                result.unshift({
+                    campo: "valid_from", tipo: "date", dimensione: null,
+                    obbligatorio: "S", modificabile: "N", defaultvalue: "ND"
+                });
+                result.unshift({
+                    campo: "last_update", tipo: "datetime", dimensione: null,
+                    obbligatorio: "N", modificabile: "N", defaultvalue: "ND"
+                });
+                result.unshift({
+                    campo: "descrizione", tipo: "nvarchar", dimensione: 255,
+                    obbligatorio: "S", modificabile: "N", defaultvalue: "ND"
+                });
+                result.unshift({
+                    campo: "chiave_composta", tipo: "nchar", dimensione: 7,
+                    obbligatorio: "N", modificabile: "N", modificabile: "N", defaultvalue: "ND"
+                });
+                result.unshift({
+                    campo: "chiave", tipo: "nchar", dimensione: 2,
+                    obbligatorio: "S", modificabile: "N", defaultvalue: "@Model.Chiave"
+                });
+                result.unshift({
+                    campo: "id", tipo: "bigint", dimensione: null,
+                    obbligatorio: "S", modificabile: "N", defaultvalue: "ND"
+                });
+
+                createTable(JSON.stringify(result));
+            }
+            else {
+                modifyTable(JSON.stringify(result));
+            }
+        }
+    }
+
+    function createTable(fields) {
+        console.log("Create table");
+
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiAdminDizionario/Home/CreateTable")',
+            method: "Post",
+            type: "POST",
+            datatype: "json",
+            data: {
+                dizionario: "@Model.Dizionario",
+                descrizione: "@Model.Descrizione",
+                chiave: "@Model.Chiave",
+                fields: fields
+            },
+		    headers: {
+			    "ModuleId": @Dnn.ModuleContext.ModuleId,
+			    "TabId": @Dnn.ModuleContext.TabId,
+			    "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                console.log("Success");
+                console.log(data);
+
+                if (data.status) {
+                    alertify.alert(
+                        "Creazione dizionario",
+                        data.msg,
+                        function () {
+                            window.location.href = "/Menù-Amministrazione/Gestione-Utenti/Gestione-Ruoli"
+                        }
+                    )
+                }
+                else {
+                    showErrorMessage(data.msg);
+
+                    alertify
+                        .alert(
+                            "ERRORE",
+                            "Verificare l'elenco degli errori riscontrati",
+                            function () { }
+                    );
+                }
+            },
+            error: function (msg) {
+                console.log("Error");
+                console.log(msg);
+
+                showErrorMessage("Si è verificato un errore durante la creazione della tabella");
+            }
+        });
+    }
+
+    function modifyTable(fields) {
+        console.log("Modify table");
+
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiAdminDizionario/Home/ModifyTable")',
+            method: "Post",
+            type: "POST",
+            datatype: "json",
+            data: {
+                dizionario: "@Model.Dizionario",
+                fields: fields
+            },
+		    headers: {
+			    "ModuleId": @Dnn.ModuleContext.ModuleId,
+			    "TabId": @Dnn.ModuleContext.TabId,
+			    "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                console.log("Success");
+                console.log(data);
+
+                if (data.status) {
+                    alertify.alert(
+                        "Modifica dizionario",
+                        data.msg,
+                        function () {
+                            window.location.href = "/"
+                        }
+                    )
+                }
+                else {
+                    showErrorMessage(data.msg);
+
+                    alertify
+                        .alert(
+                            "ERRORE",
+                            "Verificare l'elenco degli errori riscontrati",
+                            function () { }
+                    );
+                }
+            },
+            error: function (msg) {
+                console.log("Error");
+                console.log(msg);
+
+                showErrorMessage("Si è verificato un errore durante la modifica della tabella");
+            }
+        });
+    }
+
+    function fnBuildInputParamsTblDizionario() { }
+
+    function fnOnSuccessTblDizionario(json) {
+        try {
+            return json;
+        }
+        catch (e) {
+            dtSetError('#tbl-dizionario');
+        }
+    }
+
+    function validateModificaStruttura(dizionario) {
+        const numfield = $("#" + dizionario + "-numfield").val();
+        let error = false;
+        let msg = "";
+
+        if (isNaN(numfield)) {
+            msg = "Il numero nuovi campi per il dizionario " + dizionario + " NON è numerico";
+            error = true;
+        }
+
+        if (error) {
+            alertify
+                .alert(
+                    "ERRORE",
+                    "Validazione dati NON superata, verificare l'elenco degli errori riscontrati",
+                    function () { }
+            );
+
+            showErrorMessage(msg);
+
+            return;
+        }
+        else {
+            $("#step").val(1);
+            $("#diz").val(dizionario);
+            $("#diznumfield").val(numfield);
+            $("form").submit();
+        }
+    }
+
+    $(document).ready(function () {
+        main_table = $('#tbl-dizionario').DataTable({
+            dom: "Sfrtip",
+            ajax: dtBuildAjax('#tbl-dizionario', '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiAdminDizionario/Home/LoadElencoDizionario")',
+                @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId,
+                fnBuildInputParamsTblDizionario, fnOnSuccessTblDizionario
+            ),
+            columns: [
+                {
+                    data: "NomeDizionario",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Descrizione",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Chiave",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "NumeroRecord",
+                    type: "int",
+                    autoWidth: true,
+                },
+                {
+                    data: "NomeDizionario",
+                    type: "text",
+                    render: function (a, b, data, d) {
+                        if (typeof data.NomeDizionario !== undefined) {
+                            return '<div class="row">'
+                                + '<div class="col-sm-4">'
+                                    + '<input type="number" id="'+data.NomeDizionario+'-numfield" class="form-control" placeholder="Num. nuovi campi" min="1"/>'
+                                + '</div>'
+                                + '<div class="col-sm-2">&nbsp;</div>'
+                                + '<div class="col-sm-6">'
+                                    + '<button type="button" class="btn btn-primary" onclick="validateModificaStruttura(\'' + data.NomeDizionario + '\')">Modifica struttura <i class="fa fa-table"></button>'
+                                + '</div>'
+                            + '</div>';
+                        }
+
+                        return "";
+                    }
+                },
+            ],
+        });
+
+        if ($("#modify-altri-campi").length > 0) {
+            $.ajax({
+                url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiAdminDizionario/Home/GetTableStructure")',
+                method: "Post",
+                type: "POST",
+                dataType: "json",
+                data: { dizionario: "@Model.Dizionario" },
+                headers: {
+                    "ModuleId": @Dnn.ModuleContext.ModuleId,
+                    "TabId": @Dnn.ModuleContext.TabId,
+                    "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+                },
+                success: function (data) {
+                    const fieldset = $("#modify-altri-campi");
+                    const fields = data.response;
+                    const htmltext = "" +
+                        "<div class='row'>" +
+                        "<div class='col-sm-3'>" +
+                        "Campo: <label>{0}</label>" +
+                        "</div>" +
+                        "<div class='col-sm-3'>" +
+                        "Tipo: <label>{1}</label>" +
+                        "</div>" +
+                        "<div class='col-sm-3'>" +
+                        "Obbligatorio: <label>{2}</label>" +
+                        "</div>" +
+                        "<div class='col-sm-3'>" +
+                        "Default: <label>{3}</label>" +
+                        "</div>" +
+                        "</div>";
+                    
+                    for (let i = 8; i < fields.length; i++) {
+                        let field = fields[i];
+                        console.log(field);
+
+                        fieldset.append(
+                            htmltext.replace("{0}", field.name)
+                                .replace("{1}", field.type.toUpperCase() + (field.dimension !== null ? field.dimension : ""))
+                                .replace("{2}", field.nullable ? "Sì" : "No")
+                                .replace("{3}", field.default_value === null ? "ND" : field.default_value)
+                        );
+                    }
+                },
+                error: function (error) {
+                    console.log("error");
+                    console.log(error);
+                }
+            });
+        }
+    });
+</script>

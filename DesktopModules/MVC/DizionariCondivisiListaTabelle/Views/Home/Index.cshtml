@@ -1,0 +1,208 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiListaTabelle.Models.Home>
+
+<dnn:DnnJsInclude ID="DnnJsBootStrap" runat="server" 
+                  FilePath="'@Url.Content("~/DesktopModules/MVC/DizionariCondivisiListaTabelle/JavaScript.js")'"
+                  ForceProvider="DnnFormBottomProvider" />
+
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Elenco dei dizionari visibili</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <table id="tblDizionario" class="simple-table display cell-border" cellspacing="0" width="100%">
+            <thead>
+                <tr style="text-align:left">
+                    <th>Dizionario</th>
+                    <th>Descrizione</th>
+                    <th>Ultima modifica</th>
+                    <th>Ultima modifica2</th>
+                    <th>Numero voci</th>
+                    <th>Download</th>
+                    <th>Gestisci</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        //$.fn.dataTable.moment('DD/MM/YYYY HH:mm:ss');
+
+        main_table = $('#tblDizionario').DataTable({
+            dom: "Sfrtip",
+            ajax: dtBuildAjax('#tblDizionario', '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiListaTabelle/Home/loaddata")',
+                @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId,
+                fnBuildInputParamsTblDizionario, fnOnSuccessTblDizionario
+            ),
+            //columnDefs: [
+            //    {
+            //        target: 2,
+            //        type: 'anti-the',
+            //    },
+            //],
+            columnDefs: [
+                { type: 'datetime-moment', targets: 3 }
+            ],
+            columns: [
+                {
+                    data: "NomeDizionario",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Descrizione",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "DataUltimaModifica",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "DataUltimaModifica2",
+                    type: "date",
+                    autoWidth: true,
+                    render: function (value) {
+                        return moment(parse_mvc_date(value)).format('DD/MM/YYYY HH:mm:ss');
+                    }
+                },
+                {
+                    data: "NumeroRecord",
+                    type: "int",
+                    autoWidth: true,
+                },
+                {
+                    // Download CSV
+                    data: "NomeDizionario",
+                    type: "text",
+                    orderable: false,
+                    autoWidth: true,
+                    render: function (a, b, data, d) {
+                        if (typeof data.NomeDizionario !== undefined) {
+                            return '<a href="#" onclick="downloadDizionario(\'' + data.NomeDizionario + '\')" class="btn btn-primary" role="button">Download CSV <i class="fa fa-download"></i>';
+                        }
+
+                        return "";
+                    }
+                },
+                {
+                    // Gestione dizionario
+                    data: "NomeDizionario",
+                    type: "text",
+                    orderable: false,
+                    autoWidth: true,
+                    render: function (a, b, data, d) {
+                        if (typeof data.NomeDizionario !== undefined) {
+                            let button_txt = "Visualizza dizionario <i class='fa fa-eye'></i>";
+
+                            if (data.DictionarySuperUser) {
+                                button_txt = "Gestione dizionario <i class='fa fa-edit'></i>";
+                            }
+
+                            return '<a href="@Url.Content("~/Aggiorna-Dizionario?tbl=")' + data.NomeDizionario + '" class="btn btn-primary" role="button">' + button_txt + '</a>';
+                        }
+
+                        return "";
+                    }
+                },
+                {
+                    // Email
+                    data: "NomeDizionario",
+                    type: "text",
+                    autoWidth: true,
+                    render: function (a, b, data, d) {
+                        if (data.DictionarySuperUser) {
+                            return '<a href="#" class="btn btn-primary" role="button" onclick="inviaEmail(\'' + data.NomeDizionario + '\')">Invia email <i class="fa fa-envelope"></i></a>';
+                        }
+
+                        return "";
+                    }
+                },
+            ],
+        });
+    });
+
+    function fnBuildInputParamsTblDizionario() { }
+
+    function fnOnSuccessTblDizionario(json) {
+        try {
+            return json;
+        }
+        catch (e) {
+            dtSetError('#tblDizionario');
+        }
+    }
+
+    function fnBuildInputParamsDownloadDizionario(dizionario) {
+        let parameters = {
+            dizionario: dizionario
+        };
+        return parameters;
+    }
+
+    function fnBuildInputParamsInviaEmail(dizionario) {
+        let parameters = {
+            dizionario: dizionario
+        };
+        return parameters;
+    }
+
+    function downloadDizionario(dizionario) {
+        $("#wait").show();
+
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiListaTabelle/Home/DownloadDizionario")',
+            method: "Post",
+            type: "POST",
+            datatype: "json",
+            data: fnBuildInputParamsDownloadDizionario(dizionario),
+		    headers: {
+			    "ModuleId": @Dnn.ModuleContext.ModuleId,
+			    "TabId": @Dnn.ModuleContext.TabId,
+			    "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                const name = getCurrentDate("") + "_dizionario_" + dizionario + ".csv";
+                const id = "download-dizionario-" + dizionario;
+                downloadFile(data.s, 'text/csv', name, id);
+            },
+            error: function (error) {
+            },
+            complete: function () {
+                $("#wait").hide();
+            }
+        });
+    }
+
+    function inviaEmail(dizionario) {
+        $("#wait").show();
+
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiListaTabelle/Home/InviaEmail")',
+            method: "Post",
+            type: "POST",
+            datatype: "json",
+            data: fnBuildInputParamsInviaEmail(dizionario),
+		    headers: {
+			    "ModuleId": @Dnn.ModuleContext.ModuleId,
+			    "TabId": @Dnn.ModuleContext.TabId,
+			    "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                alertify.alert("Informazione", data.r, function() {});
+            },
+            error: function (error) {
+                alertify.alert("Errore", "Si è verificato un errore generico durante l'invio dell'email", function() {});
+            },
+            complete: function () {
+                $("#wait").hide();
+            }
+        });
+    }
+</script>

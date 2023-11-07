@@ -1,0 +1,227 @@
+@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiSpidProfilo.Models.Home>
+@using it.invisiblefarm.dizionaricondivisi.DizionariCondivisiUtils
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Profilo utente di @WebUtils.GetCurrentNomeCognome() </h2>
+    </div>
+    <div class="col-sm-12">
+        <h6>I campi contrassegnati da (*) sono obbligatori</h6>
+    </div>
+</div>
+<br />
+
+<div id="container-spid-user-form">
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="form-group">
+                <label for="name">Nome</label>
+                <input type="text" value="" class="form-control" disabled id="firstname" />
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <label for="lastname">Cognome</label>
+            <input type="text" value="" class="form-control" disabled id="lastname" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="form-group">
+                <label for="nickname">Nickname</label>
+                <input type="text" name="name" value="" class="form-control" disabled id="nickname" />
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <label for="tax_code">Codice Fiscale</label>
+            <input type="text" name="name" value="" class="form-control" disabled id="tax_code" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="form-group">
+                <label for="email">E-mail lavoro (*)</label>
+                <input type="text" name="name" value="" class="form-control" id="email" required />
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <label for="membership_body">Ente di appartenenza (*)</label>
+            <select class="form-control" id="membership_body" required>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="form-work_address">
+                <label for="work_address">Indirizzo lavoro (*)</label>
+                <input type="text" name="work_address" value="" class="form-control" id="work_address" required />
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <label for="work_phone">Telefono lavoro (*)</label>
+            <input type="text" name="work_phone" value="" class="form-control" id="work_phone" required />
+        </div>
+    </div>
+    <br />
+    <div class="row" id="container-button-save" style="display: none">
+        <div class="col-sm-12" style="text-align: center;">
+            <button type="button" class="btn btn-success" id="save">Salva</button>
+        </div>
+
+    </div>
+</div>
+
+<script type="text/javascript">
+    const debug = false;
+
+    $(document).ready(function () {
+        $("#wait").show();
+        LoadOption();
+        LoadData();
+        $("#wait").hide();
+
+        $("#save").click(function () {
+            $("#wait").show();
+
+            if (!$("#email").val().match(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/)) {
+                alertify.error("Inserire una email valida");
+                $("#wait").hide();
+                return;
+            }
+
+            if ($("#membership_body").val() === "NSP") {
+                alertify.error("Selezionare un ente");
+                $("#wait").hide();
+                return
+            }
+
+            if ($("#work_address").val() === "" ) {
+                alertify.error("Inserire un indirizzo lavoro");
+                $("#wait").hide();
+                return;
+            }
+
+            if ($("#work_phone").val() === '') {
+                alertify.error("Numero di telefono lavoro<br />non valido");
+                $("#wait").hide();
+                return;
+            }
+
+            Save();
+        });
+    });
+
+    function LoadOption() {
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiSpidProfilo/Home/LoadOption")',
+            method: "Post",
+            type: "POST",
+            async: false,
+            datatype: "json",
+            headers: {
+                "ModuleId": @Dnn.ModuleContext.ModuleId,
+                "TabId": @Dnn.ModuleContext.TabId,
+                "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                $.each(data, function (key, value) {
+                    $("#membership_body").append(`<option value=${value.Value}>${value.TextNonLocalized}</option>`);
+                });
+                $("#membership_body").append('<option value="NSP"> Non Specificato </option>');
+            },
+            error: function (msg) {
+                if (debug) {
+                    console.log("Error", msg);
+                }
+
+                alertify.alert("Attenzione", "Si è verificato un errore critico nel recupero degli enti di appartenenza");
+            }
+        });
+    }
+
+    function LoadData() {
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiSpidProfilo/Home/LoadData")',
+            method: "Post",
+            type: "POST",
+            async: false,
+            datatype: "json",
+            headers: {
+                "ModuleId": @Dnn.ModuleContext.ModuleId,
+                "TabId": @Dnn.ModuleContext.TabId,
+                "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                $("#firstname").val(data.Nome);
+                $("#lastname").val(data.Cognome);
+                $("#nickname").val(data.Nickname);
+                $("#tax_code").val(data.CodiceFiscale);
+                $("#email").val(data.EmailLavoro);
+                $("#membership_body option").removeAttr('selected');
+                $(`#membership_body option[value='${data.EnteAppartenenza}']`).prop('selected', true);
+                $("#work_address").val(data.IndirizzoLavoro);
+                $("#work_phone").val(data.TelefonoLavoro);
+                
+                if (data.IsSpid) {
+                    $("#container-button-save").show();
+                }
+                else {
+                    $("#email").attr("disabled", "disabled");
+                    $("#membership_body").attr("disabled", "disabled");
+                    $("#work_address").attr("disabled", "disabled");
+                    $("#work_phone").attr("disabled", "disabled");
+                }
+            },
+            error: function (msg) {
+                if (debug) {
+                    console.log("Error", msg);
+                }
+
+                alertify.alert("Attenzione", "Si è verificato un errore critico nel recupero del profilo");
+            }
+        });
+    }
+
+    function Params() {
+        let parameters = {
+            ente: $("#membership_body").val(),
+            mail: $("#email").val(),
+            address: $("#work_address").val(),
+            phone: $("#work_phone").val(),
+        };
+
+        return parameters;
+    }
+
+    function Save() {
+        let parameters = Params();
+        $.ajax({
+            url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiSpidProfilo/Home/Save")',
+            method: "Post",
+            type: "POST",
+            datatype: "json",
+            data: parameters,
+            headers: {
+                "ModuleId": @Dnn.ModuleContext.ModuleId,
+                "TabId": @Dnn.ModuleContext.TabId,
+                "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+            },
+            success: function (data) {
+                if (data) {
+                    alertify.success("Profilo aggiornato con successo");
+                } else {
+                    alertify.error("Si è verificato un errore durante l'aggiornamento del profilo");
+                }
+            },
+            error: function (msg) {
+                if (debug) {
+                    console.log("Error", msg);
+                }
+
+                alertify.alert("Si è verificato un errore critico durante l'aggiornamento del profilo");
+            },
+            complete: function () {
+                $("#wait").hide();
+            }
+        });
+    }
+</script>

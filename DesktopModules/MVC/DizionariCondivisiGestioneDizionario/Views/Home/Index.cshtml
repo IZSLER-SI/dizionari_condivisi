@@ -1,0 +1,326 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiGestioneDizionario.Models.GestioneDizionarioModel>
+
+@if (Model.IsError)
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="dnnFormMessage alert alert-danger">
+                Impossibile identificare il dizionario da aggiornare
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="dnnFormMessage">
+            Dizionario: <label>@Model.dizionarioModel.table</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-12">
+            <table id="tbl-dizionario" class="simple-table display cell-border" cellspacing="0" width="100%">
+            </table>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const table_id = "#tbl-dizionario";
+        var editor; // use a global for the submit and return data rendering in the examples
+
+        $(document).ready(function () {
+            getDatatable();
+        });
+
+        function isDictionarySuperUser() {
+            if ("@Model.DictionarySuperUser" === "True") {
+                return true;
+            }
+
+            return false;
+        }
+
+        function hasCampiModificabili() {
+            if ("@Model.HasCampiModificabili" === "True") {
+                return true;
+            }
+
+            return false;
+        }
+
+        function getDatatableColumns() {
+            return main_table.settings().init().columns;
+        }
+
+        function getDatatable() {
+            let columns = [];
+            let fields = [];
+
+            $.ajax({
+                url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneDizionario/Home/GetTableStructure")',
+                method: "Post",
+                type: "POST",
+                datatype: "json",
+                data: fnBuildInputParamsTblDizionario(),
+		        headers: {
+			        "ModuleId": @Dnn.ModuleContext.ModuleId,
+			        "TabId": @Dnn.ModuleContext.TabId,
+			        "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+		        },
+                success: function (data) {
+                    // Setto le colonne
+                    const model = data.response;
+                    for (let key in model) {
+                        if (model.hasOwnProperty(key)) {
+                            let item = model[key];
+
+                            if (item.name !== "id" && item.name !== "chiave" && item.name !== "contatore") {
+                                columns.push({
+                                    data: item.name,
+                                    title: item.name,
+                                    className: item.datatables_type + (item.can_edit ? " can_edit" : "")
+                                });
+                            }
+
+                            if (isDictionarySuperUser()) {
+                                if (item.name !== "last_update" && item.name !== "id" && item.name !== "chiave_composta"
+                                    && item.name !== "chiave" && item.name !== "contatore") {
+
+                                    let field = {
+                                        label: !item.nullable ? item.name + " (*)" : item.name,
+                                        fieldInfo: !item.nullable ? "Obbligatorio" : "",
+                                        name: item.name,
+                                        type: /*item.name === "chiave" ? "readonly" : */item.editor_type
+                                    };
+
+                                    if (item.datatables_type == "num") {
+                                        field.attr = { type: 'number' };
+                                    }
+
+                                    if (item.name === "valid_from" || item.name === "valid_to") {
+                                        field.format = "DD-MM-YYYY";
+                                        if (item.type === "datetime") {
+                                            field.format += " HH:mm:ss";
+                                        }
+                                    }
+
+                                    fields.push(field);
+                                }
+                            }
+                        }
+                    }
+
+                    editor = new $.fn.dataTable.Editor({
+                        ajax: {
+                            create: dtBuildEditorAjax(table_id, '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneDizionario/Home/Create")',
+                            @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId
+                            ),
+                            edit: dtBuildEditorAjax(table_id, '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneDizionario/Home/Edit")',
+                            @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId
+                            ),
+                            remove: dtBuildEditorAjax(table_id, '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneDizionario/Home/Remove")',
+                            @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId
+                            ),
+                        },
+                        table: table_id,
+                        fields: fields,
+                        // Aggiungo internalizzaione
+                        i18n: {
+                            create: {
+                                button: "Inserisci",
+                                title: "Inserire una nuova voce",
+                                submit: "Inserisci"
+                            },
+                            edit: {
+                                button: "Modifica",
+                                title: "Modifica una voce",
+                                submit: "Modifica"
+                            },
+                            error: {
+                                system: "Si è verificato un errore"
+                            },
+                            datetime: {
+                                previous: 'Prec',
+                                next: 'Succ',
+                                months: [
+                                    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                                    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+                                ],
+                                weekdays: ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
+                            }
+                        }
+                    });
+
+                    // Abilito l'inserimento di tutti i campi
+                    editor.on('initCreate', function (e) {
+                        const tblColumns = getDatatableColumns();
+                        
+                        $(tblColumns).each(function (i) {
+                            let column = tblColumns[i];
+                            try { editor.field(column.data).enable(); } catch (error) { }
+                        });
+                    });
+
+                    // Abilito la modifica solo sui campi definiti modificabili
+                    // Gli altri sono disabilitati
+                    editor.on('initEdit', function (e, node, data, items, type) {
+                        const tblColumns = getDatatableColumns();
+
+                        $(node).find("td").each(function (i) {
+                            let column = tblColumns[i];
+
+                            // Se va in errore significa che manca la colonna in editor
+                            // Non mi interessa gestire la casistica
+                            if (column.className.includes("can_edit")) {
+                                try { editor.field(column.data).enable(); } catch (error) { }
+                            }
+                            else {
+                                try { editor.field(column.data).disable(); } catch (error) { }
+                            }
+                        });
+                    })
+
+                    // Aggiunto la tabella ai dati da passare in fase di create/edit/remove
+                    editor.on("preSubmit", function (e, data, action) {
+                        data.table = "@Model.dizionarioModel.table";
+                    });
+
+                    // Elimina = Soft delete = Edit
+                    // Ricarico la tabella così aggiorno i pulsanti
+                    editor.on("postEdit", function (e, json, data, id) {
+                        reload_table();
+                    });
+
+                    // Azione scatenata quando è stata completata la submit
+                    // discriminando sulla action
+                    //editor.on('submitComplete', function (e, json, data, action) {
+                    //    if (action === "edit") {
+                    //        editor
+                    //            .message("")
+                    //            // Creo il nuovo record
+                    //            .edit(main_table.row({ selected: true }).index(), {
+                    //                title: "Inserire una nuova voce",
+                    //                buttons: "Inserisci"
+                    //            })
+                    //            .mode("create");
+                    //    }
+                    //});
+
+                    let buttons = [
+                        {
+                            extend: 'csvHtml5',
+                            text: 'Download CSV <i class="fa fa-download"></i>',
+                            filename: getCurrentDate("") + '_dizionario_@Model.dizionarioModel.table',
+                            escapeChar: "",
+                            fieldSeparator: ';',
+                            exportOptions: {
+                                format: {
+                                    body: function (data, row, column, node) {
+                                        if ($(node).attr("class").trim() == "date" && data != '') {
+                                            return moment(data, "DD-MM-YYYY").format('YYYY-MM-DD');
+                                        }
+                                        else if ($(node).attr("class").trim() == "datetime" && data != '') {
+                                            return moment(data, "DD-MM-YYYY HH:mm:ss").format('YYYY-MM-DD HH:mm:ss');
+                                        }
+                                        else {
+                                            return data;
+                                        }
+                                    }
+                                },
+                            }
+                        }
+                    ];
+
+                    if (isDictionarySuperUser()) {
+                        buttons.push({ extend: "create", editor: editor });
+                        buttons.push({
+                            extend: "selectedSingle",
+                            text: 'Elimina',
+                            action: function (e, dt, node, config) {
+                                var rows = main_table.rows({ selected: true }).indexes();
+                                var rowData = main_table.row(rows[0]).data();
+
+                                editor
+                                    .hide(editor.fields())
+                                    .one('close', function () {
+                                        setTimeout(function () { // Wait for animation
+                                            editor.show(editor.fields());
+                                        }, 500);
+                                    })
+                                    .edit(rows, {
+                                        title: 'Cancellare la riga selezionata?',
+                                        message: `Sei sicuro di voler eliminare la riga <strong>${rowData.chiave_composta} - ${rowData.descrizione}</strong>?`,
+                                        buttons: 'Cancella'
+                                    })
+                                    .val('valid_to', getCurrentDate("-"));
+                            }
+                        });
+                    }
+
+                    if (hasCampiModificabili()) {
+                        buttons.push({ extend: "edit", editor: editor });
+                    }
+
+                    // Definisco datatable
+                    main_table = $(table_id).DataTable({
+                        dom: "Bfrtip",
+                        ajax: dtBuildAjax(
+                            table_id, '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiGestioneDizionario/Home/List")',
+                            @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId,
+                            fnBuildInputParamsTblDizionario, fnOnSuccessTblDizionario
+                        ),
+                        columns: columns,
+                        select: true, //isDictionarySuperUser(),
+                        buttons: buttons,
+                        orderClasses: false,
+                        scrollX: true,
+                        rowCallback: function (row, data, displayNum, displayIndex, dataIndex) {
+                            if (!isValidRecord(data.valid_to)) {
+                                $(row).addClass('deleted');
+                            }
+                        }
+                    });
+
+                    main_table.on("user-select", function (e, dt, type, cell, originalEvent) {
+                        const rowIndex = cell[0][0].row;
+                        const rowData = main_table.row(rowIndex).data();
+                        
+                        if (!isValidRecord(rowData.valid_to)) {
+                            e.preventDefault();
+                        }
+                    });
+                },
+                error: function (error) {
+                    dtSetError(table_id);
+                }
+            });
+        }
+
+        function isValidRecord(value) {
+            return moment(value, "DD-MM-YYYY").isAfter(moment().format("YYYY-MM-DD"));
+        }
+
+        function reload_table() {
+            main_table.ajax.reload();
+        }
+
+        function fnBuildInputParamsTblDizionario() {
+            let parameters = {
+                table: "@Model.dizionarioModel.table",
+            }
+            return parameters;
+        }
+
+        function fnOnSuccessTblDizionario(json) {
+            try {
+                return json.data;
+            }
+            catch (e) {
+                dtSetError(table_id);
+            }
+        }
+    </script>
+}

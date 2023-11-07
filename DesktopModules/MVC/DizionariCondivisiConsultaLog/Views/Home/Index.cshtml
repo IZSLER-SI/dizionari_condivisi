@@ -1,0 +1,64 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiConsultaLog.Models.ConsultaLogModel>
+
+<div class="row">
+    <div class="col-sm-12">
+        <table id="tbl-consulta-log" class="simple-table display cell-border size10e5" cellspacing="0" width="100%">
+            <thead>
+                <tr style="text-align:left">
+                    <th>Dizionario</th>
+                    <th>Utente</th>
+                    <th>Data operazione</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+    let main_table;
+    const table_id = "#tbl-consulta-log";
+
+    $(document).ready(function () {
+        //Costruisco la tabella con datatable solo in caso di success
+        main_table = $(table_id).DataTable({
+            //dom: "RPflrtip",
+            ajax: dtBuildAjax(
+                table_id, '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiConsultaLog/Home/LoadLog")',
+                @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId,
+                fnBuildInputParams, fnOnSuccess
+            ),
+            columns: [
+                {
+                    data: "Dizionario",
+                    type: "text",
+                    autoWidth: true
+                },
+                {
+                    data: "Utente",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Data_Operazione",
+                    type: "text",
+                    autoWidth: true,
+                }
+            ],
+        });
+    });
+
+    function reload_table() {
+        main_table.ajax.reload();
+    }
+
+    function fnBuildInputParams() { }
+
+    function fnOnSuccess(json) {
+        try {
+            return json;
+        }
+        catch (e) {
+            dtSetError(table_id);
+        }
+    }
+</script>

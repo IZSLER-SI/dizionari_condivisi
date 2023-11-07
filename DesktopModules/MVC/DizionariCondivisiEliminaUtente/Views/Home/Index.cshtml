@@ -1,0 +1,159 @@
+﻿@inherits DotNetNuke.Web.Mvc.Framework.DnnWebViewPage<it.invisiblefarm.dizionaricondivisi.DizionariCondivisiEliminaUtente.Models.EliminaUtenteModel>
+
+<div class="row">
+    <div class="col-sm-12">
+        <h2>Elenco utenti</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12">
+        <table id="tbl-utenti" class="simple-table display cell-border" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Email</th>
+                    <th>Data iscrizione</th>
+                    <th>Autorizzato</th>
+                    <th>Utente Autorizzazione</th>
+                    <th>Data Autorizzazione</th>
+                    <th></th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+    const tblId = "#tbl-utenti";
+
+    function fnBuildInputParamsTblUtentiAutorizzare() { }
+
+    function fnOnSuccessTblUtentiAutorizzare(json) {
+        try {
+            return json;
+        }
+        catch (e) {
+            dtSetError(tblId);
+        }
+    }
+
+    $(document).ready(function () {
+        main_table = $(tblId).DataTable({
+            dom: "Sfrtip",
+            ajax: dtBuildAjax(tblId, '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiEliminaUtente/Home/LoadData")',
+                @Dnn.ModuleContext.ModuleId, @Dnn.ModuleContext.TabId,
+                fnBuildInputParamsTblUtentiAutorizzare, fnOnSuccessTblUtentiAutorizzare
+            ),
+            columns: [
+                {
+                    data: "Nome",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Cognome",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "Email",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "DataCreazione",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "IsAutorizzato",
+                    className: 'dt-body-center',
+                    render: function (a, b, data, d) {
+                        let icon = "remove";
+                        if (data.IsAutorizzato) {
+                            icon = "check";
+                        }
+
+                        return "<em class='fa fa-" + icon + " fa-2x'></em>";
+                    }
+                },
+                {
+                    data: "Utente",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "DataOperazione",
+                    type: "text",
+                    autoWidth: true,
+                },
+                {
+                    data: "UserId",
+                    type: "int",
+                    autoWidth: true,
+                    render: function (a, b, data, d) {
+                        const username = `${data.Nome} ${data.Cognome}`;
+                        return `<button type="button" class="btn btn-danger" onclick="deleteUser('${data.UserId} ', '${username}')">Elimina <i class="fa fa-trash"></i></button>`;
+                    }
+                }
+            ],
+        });
+    });
+
+    function fnBuildInputParamsDeleteUser(uid) {
+        let parameters = {
+            userId: uid
+        };
+
+        return parameters;
+    };
+
+    function reload_table() {
+        main_table.ajax.reload();
+    }
+
+    function deleteUser(userId, username) {
+        if (userId <= 0) {
+            console.log("Impossibile identificare utente");
+
+            return false;
+        }
+
+        alertify.confirm(
+            "Attenzione",
+            `Confermi di voler eliminare l'utente <b>${username}</b>?`,
+            function () {
+                $("#wait").show();
+                $.ajax({
+                    url: '@Url.Content("~/DesktopModules/MVC/DizionariCondivisiEliminaUtente/Home/DeleteUser")',
+                    method: "Post",
+                    type: "POST",
+                    datatype: "json",
+                    data: fnBuildInputParamsDeleteUser(userId),
+		            headers: {
+			            "ModuleId": @Dnn.ModuleContext.ModuleId,
+			            "TabId": @Dnn.ModuleContext.TabId,
+			            "RequestVerificationToken": $("input[name='__RequestVerificationToken']").val()
+                    },
+                    success: function (data) {
+                        console.log("Success");
+                        console.log(data);
+
+                        if (data) {
+                            reload_table();
+                        }
+                    },
+                    error: function (error) {
+                        console.log("Error");
+                        console.log(error);
+                    },
+                    complete: function() {
+                        $("#wait").hide();
+                    }
+                });
+            },
+            function () { }
+        );
+    }
+</script>
